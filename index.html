@@ -2,20 +2,28 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#050508">
     <title>SHAHED // SECURE COMMS</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23050508'/%3E%3Cpath d='M7 9h18v3H10v4h12v3H10v7H7z' fill='%23ff0033'/%3E%3C/svg%3E">
     <style>
         :root {
             --bg: #050508;
             --panel: #0a0a10;
             --border: #1a1a25;
             --text: #c0c0c0;
+            --muted: #55555f;
             --accent: #ff0033;
             --accent-dim: #660014;
             --success: #00ff66;
+            --warn: #ffb000;
+            --danger: #ff3355;
         }
-        
+
         * { box-sizing: border-box; }
+
+        html, body { height: 100%; }
 
         body {
             margin: 0;
@@ -25,24 +33,27 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
+            min-height: 100dvh;
             overflow: hidden;
-            background-image: 
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background-image:
                 radial-gradient(circle at 50% 0%, #1a0005 0%, transparent 50%),
-                linear-gradient(0deg, transparent 24%, rgba(255, 0, 51, 0.03) 25%, rgba(255, 0, 51, 0.03) 26%, transparent 27%, transparent 74%, rgba(255, 0, 51, 0.03) 75%, rgba(255, 0, 51, 0.03) 76%, transparent 77%, transparent);
-            background-size: 100% 100%, 100% 4px;
+                repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 0, 51, 0.03) 3px 4px);
         }
 
         .container {
             width: 100%;
-            max-width: 700px;
-            height: 90vh;
+            max-width: 720px;
+            height: min(92vh, 900px);
+            height: min(92dvh, 900px);
             display: flex;
             flex-direction: column;
             background: var(--panel);
             border: 1px solid var(--border);
-            box-shadow: 0 0 50px rgba(255, 0, 51, 0.1);
+            box-shadow: 0 0 60px rgba(255, 0, 51, 0.12), inset 0 0 80px rgba(0, 0, 0, 0.55);
             position: relative;
+            overflow: hidden;
         }
 
         .container::before, .container::after {
@@ -51,17 +62,23 @@
             width: 20px;
             height: 20px;
             border: 2px solid var(--accent);
+            pointer-events: none;
+            z-index: 5;
         }
-        .container::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
-        .container::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+        .container::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+        .container::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+        /* ---------- Шапка ---------- */
 
         .header {
-            padding: 15px 20px;
+            padding: 14px 18px;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
             background: rgba(255, 0, 51, 0.05);
+            flex: none;
         }
 
         .logo {
@@ -69,157 +86,401 @@
             font-size: 20px;
             letter-spacing: 4px;
             color: var(--accent);
-            text-shadow: 0 0 10px var(--accent-dim);
+            text-shadow: 0 0 12px var(--accent-dim);
+            user-select: none;
         }
 
-        .status {
-            font-size: 10px;
-            color: var(--success);
+        .header-tools {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .nick {
+            background: none;
+            border: none;
+            padding: 4px 6px;
+            font: inherit;
+            font-size: 10px;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
+            color: var(--muted);
+            cursor: pointer;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .nick span { color: var(--text); }
+        .nick:hover { color: var(--accent); }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--muted);
+            white-space: nowrap;
         }
 
         .status-dot {
             width: 6px;
             height: 6px;
-            background: var(--success);
             border-radius: 50%;
-            animation: pulse 1s infinite;
+            background: currentColor;
+            box-shadow: 0 0 6px currentColor;
+            flex: none;
         }
 
+        .status[data-state="online"] { color: var(--success); }
+        .status[data-state="connecting"] { color: var(--warn); }
+        .status[data-state="offline"] { color: var(--danger); }
+
+        .status[data-state="online"] .status-dot { animation: pulse 1.8s ease-in-out infinite; }
+        .status[data-state="connecting"] .status-dot { animation: blink 0.9s steps(2, end) infinite; }
+
         @keyframes pulse {
-            0% { opacity: 1; box-shadow: 0 0 5px var(--success); }
-            50% { opacity: 0.3; box-shadow: none; }
-            100% { opacity: 1; box-shadow: 0 0 5px var(--success); }
+            0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+            50% { opacity: 0.25; box-shadow: none; }
+        }
+        @keyframes blink { 50% { opacity: 0.2; } }
+
+        /* ---------- Лента сообщений ---------- */
+
+        .chat {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            display: flex;
         }
 
         .messages {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
-            padding: 20px;
+            overscroll-behavior: contain;
+            padding: 18px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             scrollbar-width: thin;
             scrollbar-color: var(--accent-dim) transparent;
         }
 
+        .messages::-webkit-scrollbar { width: 8px; }
+        .messages::-webkit-scrollbar-track { background: transparent; }
+        .messages::-webkit-scrollbar-thumb { background: #2a1018; border-radius: 4px; }
+        .messages::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+        .empty {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.8;
+            color: #3a3a46;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            pointer-events: none;
+            padding: 20px;
+        }
+        .empty[hidden] { display: none; }
+
         .message {
             background: #0f0f16;
-            border-left: 2px solid #333;
-            padding: 10px 15px;
-            max-width: 85%;
+            border-left: 2px solid #2a2a38;
+            border-radius: 0 2px 2px 0;
+            padding: 9px 13px;
+            max-width: min(85%, 560px);
             align-self: flex-start;
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.55;
             position: relative;
-            animation: slideIn 0.2s ease-out;
         }
+
+        .message.live { animation: slideIn 0.18s ease-out; }
 
         .message.own {
             align-self: flex-end;
             border-left: none;
             border-right: 2px solid var(--accent);
+            border-radius: 2px 0 0 2px;
             background: #1a0a0f;
         }
 
         .message .meta {
-            font-size: 10px;
-            color: #555;
-            margin-bottom: 5px;
             display: flex;
             justify-content: space-between;
-            gap: 15px;
+            align-items: baseline;
+            gap: 14px;
+            margin-bottom: 4px;
+            font-size: 10px;
+            letter-spacing: 0.4px;
             text-transform: uppercase;
+            color: var(--muted);
         }
 
-        .message.own .meta { color: var(--accent-dim); }
-        .message .user { color: var(--accent); font-weight: bold; }
+        .message .user {
+            color: var(--accent);
+            font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         .message.own .user { color: #ff6688; }
 
+        .message .time {
+            color: #4a4a58;
+            flex: none;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .message .text {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .day {
+            align-self: center;
+            flex: none;
+            margin: 6px 0;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            background: #08080d;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #4a4a58;
+        }
+
+        .jump {
+            position: absolute;
+            left: 50%;
+            bottom: 14px;
+            transform: translate(-50%, 8px);
+            padding: 8px 14px;
+            border: none;
+            background: var(--accent);
+            color: #000;
+            font: inherit;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.18s, transform 0.18s, background 0.18s, visibility 0s 0.18s;
+            box-shadow: 0 4px 18px rgba(255, 0, 51, 0.35);
+            z-index: 4;
+        }
+        .jump.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translate(-50%, 0);
+            transition: opacity 0.18s, transform 0.18s, background 0.18s, visibility 0s;
+        }
+        .jump:hover { background: #fff; }
+
+        /* ---------- Поле ввода ---------- */
+
         .input-area {
-            padding: 15px;
-            border-top: 1px solid var(--border);
             display: flex;
             gap: 10px;
+            padding: 14px;
+            border-top: 1px solid var(--border);
             background: #050508;
+            flex: none;
         }
 
         .input-wrapper { flex: 1; position: relative; }
 
         input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 12px 14px;
             background: transparent;
             border: 1px solid var(--border);
             color: var(--text);
             font-family: inherit;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
+
+        input::placeholder { color: #3d3d4a; }
 
         input:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 10px rgba(255, 0, 51, 0.1);
+            box-shadow: 0 0 0 1px rgba(255, 0, 51, 0.25), 0 0 18px rgba(255, 0, 51, 0.08);
         }
 
+        input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .input-wrapper.has-counter input { padding-right: 56px; }
+
+        .counter {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 10px;
+            color: var(--muted);
+            pointer-events: none;
+            font-variant-numeric: tabular-nums;
+        }
+        .counter[hidden] { display: none; }
+
         button {
-            padding: 0 25px;
+            padding: 0 24px;
             background: var(--accent);
             color: #000;
             border: none;
             font-family: inherit;
             font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
+            font-size: 13px;
             letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s, opacity 0.2s;
+            flex: none;
         }
 
-        button:hover {
+        button:not(:disabled):hover {
             background: #fff;
             color: var(--accent);
-            box-shadow: 0 0 20px var(--accent);
+            box-shadow: 0 0 22px var(--accent);
         }
+
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        button:focus-visible,
+        input:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* ---------- Оверлей идентификации ---------- */
 
         .overlay {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(5, 5, 8, 0.95);
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(5, 5, 8, 0.96);
+            backdrop-filter: blur(6px);
+            z-index: 20;
+            visibility: visible;
+            transition: opacity 0.25s, visibility 0s;
+        }
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+            transition: opacity 0.25s, visibility 0s 0.25s;
+        }
+
+        .ident {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            z-index: 100;
-            backdrop-filter: blur(5px);
-            transition: opacity 0.3s;
+            width: 100%;
+            max-width: 320px;
         }
-
-        .overlay.hidden { opacity: 0; pointer-events: none; }
 
         .overlay h2 {
-            color: var(--accent);
+            margin: 0 0 8px;
+            font-size: 20px;
             letter-spacing: 3px;
-            margin-bottom: 20px;
             text-transform: uppercase;
+            color: var(--accent);
+            text-align: center;
         }
+
+        .hint {
+            margin: 0 0 18px;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            text-align: center;
+            color: var(--muted);
+        }
+        .hint.error { color: var(--danger); }
 
         .overlay input {
-            width: 250px;
+            width: 100%;
+            margin-bottom: 16px;
             text-align: center;
-            margin-bottom: 20px;
-            font-size: 18px;
+            font-size: 17px;
+            letter-spacing: 2px;
         }
 
-        .overlay button { padding: 12px 40px; }
+        .overlay button { width: 100%; padding: 13px 20px; }
+
+        /* ---------- Уведомление ---------- */
+
+        .toast {
+            position: absolute;
+            left: 50%;
+            bottom: 84px;
+            transform: translate(-50%, 8px);
+            max-width: calc(100% - 32px);
+            padding: 10px 16px;
+            background: #1a0a0f;
+            border: 1px solid var(--accent-dim);
+            color: #ff8fa3;
+            font-size: 12px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 30;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            body { align-items: stretch; padding: 0; }
+            .container {
+                max-width: none;
+                height: 100vh;
+                height: 100dvh;
+                border: none;
+                box-shadow: none;
+            }
+            .container::before, .container::after { display: none; }
+            .header { padding: 12px 14px; }
+            .logo { font-size: 17px; letter-spacing: 3px; }
+            .nick { max-width: 90px; }
+            .messages { padding: 14px 12px; gap: 10px; }
+            .message { max-width: 88%; }
+            .input-area {
+                padding: 10px;
+                padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            }
+            input, .overlay input { font-size: 16px; }
+            button { padding: 0 18px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+            }
         }
     </style>
 </head>
@@ -227,154 +488,642 @@
 
 <div class="container">
     <div class="overlay" id="nameOverlay">
-        <h2>Идентификация</h2>
-        <input type="text" id="nameInput" placeholder="Твой позывной" maxlength="15" autocomplete="off">
-        <button id="startBtn">Войти в сеть</button>
+        <form class="ident" id="nameForm" autocomplete="off" novalidate>
+            <h2>Идентификация</h2>
+            <p class="hint" id="nameHint">Позывной: 2–16 символов</p>
+            <input
+                type="text"
+                id="nameInput"
+                placeholder="Твой позывной"
+                maxlength="16"
+                aria-label="Позывной"
+                aria-describedby="nameHint"
+                autocapitalize="off"
+                spellcheck="false">
+            <button type="submit">Войти в сеть</button>
+        </form>
     </div>
 
-    <div class="header">
+    <header class="header">
         <div class="logo">SHAHED</div>
-        <div class="status">
-            <div class="status-dot"></div>
-            <span id="statusText">Связь...</span>
+        <div class="header-tools">
+            <button type="button" class="nick" id="changeNameBtn" title="Сменить позывной" hidden>
+                <span id="nickLabel"></span>
+            </button>
+            <div class="status" id="status" data-state="connecting" role="status" aria-live="polite">
+                <span class="status-dot"></span>
+                <span id="statusText">Связь…</span>
+            </div>
         </div>
+    </header>
+
+    <div class="chat">
+        <main class="messages" id="messages" role="log" aria-live="polite" aria-label="Сообщения"></main>
+        <div class="empty" id="empty" hidden>Сообщений пока нет.<br>Напиши первым.</div>
+        <button type="button" class="jump" id="jumpBtn">↓ Новые</button>
     </div>
-    
-    <div class="messages" id="messages"></div>
-    
-    <div class="input-area">
-        <div class="input-wrapper">
-            <input type="text" id="msgInput" placeholder="Введи сообщение..." autocomplete="off">
+
+    <form class="input-area" id="msgForm" autocomplete="off">
+        <div class="input-wrapper" id="inputWrapper">
+            <input
+                type="text"
+                id="msgInput"
+                placeholder="Введи сообщение…"
+                maxlength="2000"
+                aria-label="Сообщение"
+                autocapitalize="off"
+                spellcheck="false"
+                disabled>
+            <span class="counter" id="counter" hidden></span>
         </div>
-        <button id="sendBtn">Отправить</button>
-    </div>
+        <button type="submit" id="sendBtn" disabled>Отправить</button>
+    </form>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
 
 <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    // ТВОИ ДАННЫЕ
+    /* ==================== НАСТРОЙКИ ==================== */
+
     const SUPABASE_URL = 'https://njhkwapcqzdcymjjhnzx.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qaGt3YXBjcXpkY3ltampobnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM3ODMzNDQsImV4cCI6MjEwOTM1OTM0NH0.SuDIASysuwZt0QJhGB27keae0XjknyDsM1dutUEB-pc';
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const TABLE = 'messages';
+    const ROOM = 'shahed-room';
+    const PAGE_SIZE = 100;        // сколько сообщений грузить при старте
+    const MAX_LEN = 2000;         // максимальная длина сообщения
+    const MAX_DOM_MESSAGES = 400; // сколько сообщений держать в DOM
 
-    let myUsername = '';
-    const messagesEl = document.getElementById('messages');
-    const inputEl = document.getElementById('msgInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const statusEl = document.getElementById('statusText');
-    
-    const nameOverlay = document.getElementById('nameOverlay');
-    const nameInput = document.getElementById('nameInput');
-    const startBtn = document.getElementById('startBtn');
+    const NAME_RE = /^[\p{L}\p{N}][\p{L}\p{N} _.\-]{1,15}$/u;
 
-    startBtn.addEventListener('click', () => {
-        const name = nameInput.value.trim();
-        if (!name) return;
-        
-        myUsername = name;
-        localStorage.setItem('shahed_username', name);
-        nameOverlay.classList.add('hidden');
-        
-        loadMessages();
-        subscribeToRealtime();
-        inputEl.focus();
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    nameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') startBtn.click();
-    });
+    /* ==================== DOM ==================== */
 
-    const savedName = localStorage.getItem('shahed_username');
-    if (savedName) {
-        nameInput.value = savedName;
+    const $ = (id) => document.getElementById(id);
+
+    const messagesEl = $('messages');
+    const emptyEl = $('empty');
+    const jumpBtn = $('jumpBtn');
+    const msgForm = $('msgForm');
+    const msgInput = $('msgInput');
+    const sendBtn = $('sendBtn');
+    const inputWrapper = $('inputWrapper');
+    const counterEl = $('counter');
+    const statusEl = $('status');
+    const statusText = $('statusText');
+    const toastEl = $('toast');
+
+    const nameOverlay = $('nameOverlay');
+    const nameForm = $('nameForm');
+    const nameInput = $('nameInput');
+    const nameHint = $('nameHint');
+    const changeNameBtn = $('changeNameBtn');
+    const nickLabel = $('nickLabel');
+
+    /* ==================== СОСТОЯНИЕ ==================== */
+
+    const storage = {
+        get(key) {
+            try { return localStorage.getItem(key); } catch { return null; }
+        },
+        set(key, value) {
+            try { localStorage.setItem(key, value); } catch { /* приватный режим */ }
+        },
+    };
+
+    const state = {
+        username: '',
+        started: false,
+        rows: [],              // канонический список сообщений
+        seen: new Set(),       // id уже отрисованных
+        lastDay: '',
+        lastTs: 0,
+        channel: null,
+        reconnectTimer: null,
+        reconnectAttempts: 0,
+        loading: false,
+        sending: false,
+        unread: 0,
+    };
+
+    const timeFmt = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const dateFmt = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    /* ==================== ВСПОМОГАТЕЛЬНОЕ ==================== */
+
+    function normalizeName(raw) {
+        return String(raw ?? '').replace(/\s+/g, ' ').trim();
     }
 
-    async function loadMessages() {
-        const { data, error } = await supabase
-            .from('messages')
-            .select('*')
-            .order('created_at', { ascending: true })
-            .limit(100);
+    function validateName(name) {
+        if (name.length < 2) return 'Минимум 2 символа';
+        if (name.length > 16) return 'Максимум 16 символов';
+        if (!NAME_RE.test(name)) return 'Только буквы, цифры, пробел, _ . -';
+        return '';
+    }
 
-        if (error) {
-            console.error('Ошибка загрузки:', error);
-            statusEl.textContent = 'Ошибка БД';
+    function normalizeRow(raw) {
+        if (!raw || typeof raw !== 'object' || raw.id == null) return null;
+
+        const content = typeof raw.content === 'string' ? raw.content : '';
+        if (!content.trim()) return null;
+
+        let ts = Date.parse(raw.created_at);
+        if (Number.isNaN(ts)) ts = Date.now();
+
+        const username = (typeof raw.username === 'string' ? raw.username.trim() : '').slice(0, 32) || 'UNKNOWN';
+
+        return {
+            id: String(raw.id),
+            username,
+            content: content.slice(0, MAX_LEN * 2),
+            ts,
+        };
+    }
+
+    function isOwnRow(row) {
+        return row.username === state.username;
+    }
+
+    function isNearBottom() {
+        return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 80;
+    }
+
+    function scrollToBottom(smooth = true) {
+        messagesEl.scrollTo({
+            top: messagesEl.scrollHeight,
+            behavior: smooth && !prefersReducedMotion.matches ? 'smooth' : 'auto',
+        });
+    }
+
+    function setStatus(kind, text) {
+        statusEl.dataset.state = kind;
+        statusText.textContent = text;
+    }
+
+    let toastTimer = null;
+    function toast(message, duration = 3200) {
+        toastEl.textContent = message;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('show'), duration);
+    }
+
+    function dayKey(date) {
+        return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    }
+
+    function sameDay(a, b) {
+        return a.getFullYear() === b.getFullYear()
+            && a.getMonth() === b.getMonth()
+            && a.getDate() === b.getDate();
+    }
+
+    function dayLabel(date) {
+        const today = new Date();
+        if (sameDay(date, today)) return 'Сегодня';
+
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        if (sameDay(date, yesterday)) return 'Вчера';
+
+        return dateFmt.format(date);
+    }
+
+    function updateSendState() {
+        sendBtn.disabled = !state.started || state.sending || !msgInput.value.trim();
+    }
+
+    function updateCounter() {
+        const left = MAX_LEN - msgInput.value.length;
+        const visible = left <= 200;
+        counterEl.hidden = !visible;
+        counterEl.textContent = left;
+        inputWrapper.classList.toggle('has-counter', visible);
+        updateSendState();
+    }
+
+    function showJump() {
+        jumpBtn.textContent = state.unread > 0 ? `↓ Новые (${state.unread})` : '↓ Вниз';
+        jumpBtn.classList.add('show');
+    }
+
+    function hideJump() {
+        jumpBtn.classList.remove('show');
+    }
+
+    /* ==================== ОТРИСОВКА ==================== */
+
+    function buildMessageNode(row) {
+        const date = new Date(row.ts);
+
+        const wrap = document.createElement('div');
+        wrap.className = `message${isOwnRow(row) ? ' own' : ''}`;
+        wrap.dataset.id = row.id;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+
+        const user = document.createElement('span');
+        user.className = 'user';
+        user.textContent = row.username;
+
+        const time = document.createElement('time');
+        time.className = 'time';
+        time.dateTime = date.toISOString();
+        time.title = `${dateFmt.format(date)}, ${timeFmt.format(date)}`;
+        time.textContent = timeFmt.format(date);
+
+        meta.append(user, time);
+
+        const text = document.createElement('div');
+        text.className = 'text';
+        text.textContent = row.content;
+
+        wrap.append(meta, text);
+        return wrap;
+    }
+
+    function appendRow(row, { live = false, forceScroll = false, silent = false } = {}) {
+        const stick = forceScroll || isOwnRow(row) || isNearBottom();
+
+        const key = dayKey(new Date(row.ts));
+        if (key !== state.lastDay) {
+            const divider = document.createElement('div');
+            divider.className = 'day';
+            divider.textContent = dayLabel(new Date(row.ts));
+            messagesEl.append(divider);
+            state.lastDay = key;
+        }
+
+        const node = buildMessageNode(row);
+        if (live) node.classList.add('live');
+        messagesEl.append(node);
+        emptyEl.hidden = true;
+
+        if (silent) return;
+
+        if (stick) {
+            requestAnimationFrame(() => scrollToBottom(true));
+            state.unread = 0;
+            hideJump();
+        } else {
+            state.unread += 1;
+            showJump();
+        }
+    }
+
+    function trimDom() {
+        let count = messagesEl.querySelectorAll('.message').length;
+        while (count > MAX_DOM_MESSAGES && messagesEl.firstChild) {
+            const node = messagesEl.firstChild;
+            if (node.nodeType === 1 && node.classList.contains('message')) count -= 1;
+            messagesEl.removeChild(node);
+        }
+    }
+
+    function renderAll() {
+        messagesEl.replaceChildren();
+        state.lastDay = '';
+        state.unread = 0;
+        hideJump();
+
+        for (const row of state.rows) {
+            appendRow(row, { silent: true });
+        }
+
+        emptyEl.hidden = state.rows.length > 0;
+        trimDom();
+        requestAnimationFrame(() => scrollToBottom(false));
+    }
+
+    function addRow(raw, options = {}) {
+        const row = raw && typeof raw.ts === 'number' ? raw : normalizeRow(raw);
+        if (!row || state.seen.has(row.id)) return null;
+
+        state.seen.add(row.id);
+
+        const last = state.rows[state.rows.length - 1];
+        if (last && row.ts < last.ts) {
+            // Сообщение пришло не в порядке времени — пересобираем ленту.
+            state.rows.push(row);
+            state.rows.sort((a, b) => a.ts - b.ts);
+            state.lastTs = state.rows[state.rows.length - 1].ts;
+            renderAll();
+            return row;
+        }
+
+        state.rows.push(row);
+        state.lastTs = Math.max(state.lastTs, row.ts);
+        appendRow(row, options);
+        trimDom();
+        return row;
+    }
+
+    function mergeRows(rows) {
+        const fresh = rows.filter((row) => row && !state.seen.has(row.id));
+        if (!fresh.length) return;
+
+        fresh.sort((a, b) => a.ts - b.ts);
+        const oldestFresh = fresh[0].ts;
+
+        // Если среди новых есть сообщения старше последнего отрисованного,
+        // проще пересобрать ленту целиком.
+        if (state.rows.length && oldestFresh < state.lastTs) {
+            const map = new Map(state.rows.map((row) => [row.id, row]));
+            for (const row of fresh) map.set(row.id, row);
+            state.rows = [...map.values()].sort((a, b) => a.ts - b.ts);
+            state.seen = new Set(state.rows.map((row) => row.id));
+            state.lastTs = state.rows[state.rows.length - 1]?.ts ?? 0;
+            renderAll();
             return;
         }
 
-        messagesEl.innerHTML = '';
-        data.forEach(renderMessage);
-        statusEl.textContent = 'Онлайн';
+        const stick = isNearBottom();
+        for (const row of fresh) {
+            addRow(row, { live: true, forceScroll: stick });
+        }
     }
 
-    function renderMessage(msg) {
-        const div = document.createElement('div');
-        const isOwn = msg.username === myUsername;
-        div.className = `message ${isOwn ? 'own' : ''}`;
-        
-        const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
-        div.innerHTML = `
-            <div class="meta">
-                <span class="user">${msg.username || 'UNKNOWN'}</span>
-                <span>${time}</span>
-            </div>
-            <div>${escapeHtml(msg.content)}</div>
-        `;
-        
-        messagesEl.appendChild(div);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
+    /* ==================== ДАННЫЕ ==================== */
 
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    async function loadMessages({ silent = false } = {}) {
+        if (state.loading) return;
+        state.loading = true;
+
+        try {
+            const { data, error } = await supabase
+                .from(TABLE)
+                .select('id, username, content, created_at')
+                .order('created_at', { ascending: false })
+                .limit(PAGE_SIZE);
+
+            if (error) throw error;
+
+            const rows = (data ?? [])
+                .map(normalizeRow)
+                .filter(Boolean)
+                .sort((a, b) => a.ts - b.ts);
+
+            if (silent) {
+                mergeRows(rows);
+                return;
+            }
+
+            state.rows = rows;
+            state.seen = new Set(rows.map((row) => row.id));
+            state.lastTs = rows.length ? rows[rows.length - 1].ts : 0;
+            renderAll();
+            setStatus('online', 'Онлайн');
+        } catch (error) {
+            console.error('Ошибка загрузки:', error);
+            setStatus('offline', 'Ошибка БД');
+            if (!silent) toast('Не удалось загрузить сообщения');
+        } finally {
+            state.loading = false;
+        }
     }
 
     async function sendMessage() {
-        const content = inputEl.value.trim();
-        if (!content || !myUsername) return;
+        const content = msgInput.value.trim();
+        if (!content || !state.username || state.sending) return;
 
-        inputEl.value = '';
-        inputEl.disabled = true;
-
-        const { error } = await supabase
-            .from('messages')
-            .insert([{ content, username: myUsername }]);
-
-        if (error) {
-            console.error('Ошибка отправки:', error);
-            alert('Ошибка отправки. Проверь базу данных.');
+        if (content.length > MAX_LEN) {
+            toast(`Максимум ${MAX_LEN} символов`);
+            return;
         }
-        
-        inputEl.disabled = false;
-        inputEl.focus();
+
+        state.sending = true;
+        updateSendState();
+
+        const previous = msgInput.value;
+        msgInput.value = '';
+        updateCounter();
+
+        try {
+            const { data, error } = await supabase
+                .from(TABLE)
+                .insert([{ content, username: state.username }])
+                .select('id, username, content, created_at')
+                .single();
+
+            if (error) throw error;
+
+            // Если RLS не разрешает RETURNING, сообщение придёт через Realtime.
+            if (data) addRow(data, { live: true, forceScroll: true });
+        } catch (error) {
+            console.error('Ошибка отправки:', error);
+            msgInput.value = previous;
+            updateCounter();
+            toast('Не отправлено. Попробуй ещё раз.');
+        } finally {
+            state.sending = false;
+            updateSendState();
+            msgInput.focus();
+        }
     }
 
-    function subscribeToRealtime() {
-        supabase.channel('shahed-room')
+    /* ==================== REALTIME ==================== */
+
+    function connect() {
+        if (!state.started) return;
+
+        clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = null;
+
+        if (state.channel) {
+            supabase.removeChannel(state.channel);
+            state.channel = null;
+        }
+
+        setStatus('connecting', 'Связь…');
+
+        const channel = supabase.channel(`room:${ROOM}`);
+        state.channel = channel;
+
+        channel
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages' },
+                { event: 'INSERT', schema: 'public', table: TABLE },
                 (payload) => {
-                    renderMessage(payload.new);
+                    if (payload?.new) addRow(payload.new, { live: true });
                 }
             )
             .subscribe((status) => {
+                if (state.channel !== channel) return;
+
                 if (status === 'SUBSCRIBED') {
-                    statusEl.textContent = 'Канал активен';
+                    state.reconnectAttempts = 0;
+                    setStatus('online', 'Онлайн');
+                    // Догоняем то, что могли пропустить за время подключения.
+                    loadMessages({ silent: true });
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    setStatus('offline', status === 'CLOSED' ? 'Канал закрыт' : 'Нет связи');
+                    scheduleReconnect();
                 }
             });
     }
 
-    sendBtn.addEventListener('click', sendMessage);
-    inputEl.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
+    function scheduleReconnect() {
+        if (!state.started || state.reconnectTimer) return;
+
+        const attempt = Math.min(state.reconnectAttempts++, 4);
+        const delay = Math.min(15000, 1000 * 2 ** attempt) + Math.random() * 400;
+
+        state.reconnectTimer = setTimeout(() => {
+            state.reconnectTimer = null;
+
+            if (!navigator.onLine) {
+                setStatus('offline', 'Нет сети');
+                scheduleReconnect();
+                return;
+            }
+
+            loadMessages({ silent: true });
+            connect();
+        }, delay);
+    }
+
+    /* ==================== СТАРТ / ИМЯ ==================== */
+
+    function start(name) {
+        const changed = state.username !== name;
+
+        state.username = name;
+        storage.set('shahed_username', name);
+        closeOverlay();
+
+        nickLabel.textContent = name;
+        changeNameBtn.hidden = false;
+        changeNameBtn.title = `Позывной: ${name}. Нажми, чтобы сменить`;
+
+        msgInput.disabled = false;
+        updateSendState();
+
+        if (!state.started) {
+            state.started = true;
+            loadMessages();
+            connect();
+        } else if (changed) {
+            // Перекрашиваем «свои» сообщения под новый позывной.
+            renderAll();
+        }
+
+        requestAnimationFrame(() => msgInput.focus());
+    }
+
+    function openOverlay() {
+        nameInput.value = state.username;
+        nameHint.textContent = 'Позывной: 2–16 символов';
+        nameHint.classList.remove('error');
+        nameOverlay.classList.remove('hidden');
+        nameOverlay.inert = false;
+        nameOverlay.removeAttribute('aria-hidden');
+        requestAnimationFrame(() => {
+            nameInput.focus();
+            nameInput.select();
+        });
+    }
+
+    function closeOverlay() {
+        nameOverlay.classList.add('hidden');
+        nameOverlay.inert = true;
+        nameOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    nameForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const name = normalizeName(nameInput.value);
+        const error = validateName(name);
+
+        if (error) {
+            nameHint.textContent = error;
+            nameHint.classList.add('error');
+            nameInput.focus();
+            return;
+        }
+
+        nameHint.textContent = 'Позывной: 2–16 символов';
+        nameHint.classList.remove('error');
+        closeOverlay();
+        start(name);
     });
 
+    changeNameBtn.addEventListener('click', openOverlay);
+
+    nameInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && state.started) {
+            event.preventDefault();
+            closeOverlay();
+            msgInput.focus();
+        }
+    });
+
+    /* ==================== СОБЫТИЯ UI ==================== */
+
+    msgForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        sendMessage();
+    });
+
+    msgInput.addEventListener('input', updateCounter);
+
+    messagesEl.addEventListener('scroll', () => {
+        if (isNearBottom()) {
+            state.unread = 0;
+            hideJump();
+        }
+    }, { passive: true });
+
+    jumpBtn.addEventListener('click', () => {
+        state.unread = 0;
+        hideJump();
+        scrollToBottom(true);
+    });
+
+    /* ==================== СЕТЬ / ВКЛАДКА ==================== */
+
+    window.addEventListener('online', () => {
+        if (!state.started) return;
+        state.reconnectAttempts = 0;
+        loadMessages({ silent: true });
+        connect();
+    });
+
+    window.addEventListener('offline', () => {
+        if (!state.started) return;
+        setStatus('offline', 'Нет сети');
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden || !state.started) return;
+        loadMessages({ silent: true });
+    });
+
+    window.addEventListener('beforeunload', () => {
+        if (state.channel) supabase.removeChannel(state.channel);
+    });
+
+    /* ==================== ИНИЦИАЛИЗАЦИЯ ==================== */
+
+    const savedName = normalizeName(storage.get('shahed_username'));
+
+    if (savedName && !validateName(savedName)) {
+        nameInput.value = savedName;
+        start(savedName);
+    } else {
+        nameOverlay.classList.remove('hidden');
+        requestAnimationFrame(() => nameInput.focus());
+    }
+
+    updateCounter();
 </script>
 
 </body>
